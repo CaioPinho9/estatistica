@@ -1,0 +1,130 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+# CARREGAR O PACOTE
+library(data.table)
+# LEITURA DA BASE
+base =
+  fread(
+    input = paste0("mobile.csv"),
+    header = T,
+    na.strings = "NA",
+    data.table = FALSE,
+    dec = "."
+  )
+
+# FORMATACAO
+library(dplyr)
+base$price_range = recode(
+  base$price_range,
+  `0` = "0:baixo",
+  `1` = "1:médio",
+  `2` = "2:caro",
+  `3` = "3:muito caro"
+)
+
+write.csv2(base, "base.csv", row.names = FALSE)
+```
+
+```{r}
+# AMOSTRA SIMPLES AO ACASO
+asa400 = base[sample(nrow(base), size = 400), ]
+```
+
+
+```{r}
+summary(asa400$battery_power)
+by(asa400$battery_power, asa400$price_range, summary)
+
+table_battery_power = aggregate(asa400$battery_power,
+                             by = list(asa400$price_range),
+                             FUN = summary)
+
+colnames(table_battery_power)[1] = "price_range"
+colnames(table_battery_power)[2] = "battery_pw_summary"
+
+matriz_battery_pw = table_battery_power$battery_pw_summary[, 1:6]
+
+table_battery_power = cbind(table_battery_power[, 1:2], as.data.frame(matriz_battery_pw))
+
+colnames(table_battery_power)[3:8] = c(
+  "battery_pow_min",
+  "battery_pw_1st_quartile",
+  "battery_pw_median",
+  "battery_pw_mean",
+  "battery_pw_3rd_quartile",
+  "battery_pw_max"
+)
+
+table_battery_power = data.frame(table_battery_power[0:1], table_battery_power[3:8])
+```
+```{r}
+summary(asa400$mobile_wt)
+by(asa400$mobile_wt, asa400$price_range, summary)
+
+table_mobile_wt = aggregate(asa400$mobile_wt,
+                             by = list(asa400$price_range),
+                             FUN = summary)
+
+colnames(table_mobile_wt)[1] = "price_range"
+colnames(table_mobile_wt)[2] = "mobile_wt_summary"
+
+matriz_mobile_wt = table_mobile_wt$mobile_wt_summary[, 1:6]
+
+table_mobile_wt =
+  cbind(table_mobile_wt[, 1:2], as.data.frame(matriz_mobile_wt))
+
+colnames(table_mobile_wt)[3:8] =
+  c(
+    "mobile_wt_min",
+    "mobile_wt_1st_quartile",
+    "mobile_wt_median",
+    "mobile_wt_mean",
+    "mobile_wt_3rd_quartile",
+    "mobile_wt_max"
+  )
+
+table_mobile_wt = data.frame(table_mobile_wt[0:1], table_mobile_wt[3:8])
+```
+
+```{r}
+summary(asa400$ram)
+by(asa400$ram, asa400$price_range, summary)
+
+table_ram = aggregate(asa400$ram,
+                       by = list(asa400$price_range),
+                       FUN = summary)
+
+colnames(table_ram)[1] = "price_range"
+colnames(table_ram)[2] = "ram_summary"
+
+matriz_ram = table_ram$ram_summary[, 1:6]
+
+table_ram = cbind(table_ram[, 1:2], as.data.frame(matriz_ram))
+
+colnames(table_ram)[3:8] =
+  c(
+    "ram_min",
+    "ram_1st_quartile",
+    "ram_median",
+    "ram_mean",
+    "ram_3rd_quartile",
+    "ram_max"
+  )
+
+table_ram = data.frame(table_ram[0:1], table_ram[3:8])
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

@@ -1,0 +1,172 @@
+---
+title: "Ex1"
+output: html_notebook
+---
+
+```{r}
+# CARREGAR O PACOTE
+library(data.table)
+# LEITURA DA BASE
+base =
+  fread(
+    input = paste0("mobile.csv"),
+    header = T,
+    na.strings = "NA",
+    data.table = FALSE,
+    dec = "."
+  )
+
+
+write.csv2(base, "base.csv", row.names = FALSE)
+```
+
+```{r}
+# FORMATACAO
+library(dplyr)
+base$price_range = recode(
+  base$price_range,
+  `0` = "0:baixo",
+  `1` = "1:médio",
+  `2` = "2:caro",
+  `3` = "3:muito caro"
+)
+
+base$four_g = recode(base$four_g,
+                     `0` = "0:não tem",
+                     `1` = "1:tem")
+```
+
+```{r}
+# UMA VARIAVEL QUALITATIVA: TABELA DE FREQUENCIA
+freq.tabela = table(base$price_range, useNA = "ifany")
+freq.tabela
+porc.tabela = round(prop.table(freq.tabela) * 100, 1)
+porc.tabela
+freq.tabela = data.frame(freq.tabela, porc.tabela)
+freq.tabela = freq.tabela[, -3]
+colnames(freq.tabela) = c("Preço", "Frequencia", "Porcentagem")
+```
+
+```{r}
+# GRAFICO DE BARRAS "PREÇO"
+# GRAFICO DE SETORES CIRCULARES "PREÇO"
+png(file = "barras.png")
+barplot(
+  height = freq.tabela$Frequencia,
+  names = freq.tabela$Preço,
+  col = rgb(0.3, 0.6, 0.5, 0.5),
+  xlab = "Preço",
+  ylab = "Frequência",
+  main = ""
+)
+dev.off()
+
+png(file = "setores.png")
+pie(freq.tabela$Frequencia, freq.tabela$Experiencia,
+    main = "Preço")
+dev.off()
+```
+
+```{r}
+# DUAS VARIAVEIS QUALITATIVAS: TABELA CRUZADA OU GRAFICO DE BARRAS "PREÇO VS 4G"
+freq.tabela =
+  table(base$four_g, base$price_range, useNA = "ifany")
+freq.tabela
+porc.tabelaL = round(prop.table(freq.tabela, 1) * 100, 1)
+porc.tabelaL
+tabela = data.frame(table(base$four_g, base$price_range))
+colnames(tabela) = c("QuatroG", "Preço", "Frequencia")
+```
+```{r}
+# GRAFICOS FREQUENCIA E PORCENTAGEM
+library(ggplot2)
+ggplot(tabela, aes(fill = QuatroG, y = Frequencia, x = Preço)) +
+  geom_bar(position = "dodge", stat = "identity")
+
+ggplot(tabela, aes(fill = QuatroG, y = Frequencia, x = Preço)) +
+  geom_bar(position = "fill", stat = "identity") +
+  ylab("Porcentagem")
+```
+
+```{r}
+# UMA VARIAVEL QUALITATIVA E UMA VARIAVEL QUANTITATIVA:
+# TABELA COM MEDIAS "MOBILE_WT VS RAM"
+tabela.medias =
+  aggregate(base$mobile_wt,
+            by = list(base$ram),
+            FUN = "mean")
+colnames(tabela.medias) = c("Ram", "Mobile_wt")
+
+library(ggplot2)
+ggplot(tabela.medias, aes(x = Ram, y = Mobile_wt)) +
+  geom_bar(stat = "identity")
+```
+```{r}
+# DUAS VARIAVEIS QUANTITATIVAS: GRAFICO DE DISPERSAO "BASE NOVA"
+ggplot(data = base, aes(mobile_wt, ram)) +
+  geom_point()
+png(file = "dispersao.png")
+dev.off()
+```
+
+```{r}
+# UMA VARIAVEL QUALITATIVA: TABELA DE FREQUENCIA
+freq.tabela = table(base$m_dep, useNA = "ifany")
+freq.tabela
+porc.tabela = round(prop.table(freq.tabela) * 100, 1)
+porc.tabela
+freq.tabela = data.frame(freq.tabela, porc.tabela)
+freq.tabela = freq.tabela[, -3]
+colnames(freq.tabela) = c("Profundidade", "Frequencia", "Porcentagem")
+
+# GRAFICO DE BARRAS "Profundidade"
+# GRAFICO DE SETORES CIRCULARES "Profundidade"
+png(file = "barras.png")
+barplot(
+  height = freq.tabela$Frequencia,
+  names = freq.tabela$Profundidade,
+  col = rgb(0.3, 0.6, 0.5, 0.5),
+  xlab = "Profundidade",
+  ylab = "Frequência",
+  main = ""
+)
+dev.off()
+
+png(file = "setores.png")
+pie(freq.tabela$Frequencia, freq.tabela$Profundidade,
+    main = "Preço")
+dev.off()
+```
+```{r}
+# UMA VARIAVEL QUANTITATIVA: HISTOGRAMA "Profundidade"
+hist(base$m_dep)
+hist(base$m_dep,
+     breaks = 6)
+hist(
+  base$m_dep,
+  main = "Profundidade",
+  xlab = "Profundidade",
+  col = "darkmagenta",
+  freq = FALSE
+)
+```
+```{r}
+# TRANSFORMACAO DE UMA VARIAVEL QUANTITATIVA PARA VARIAVEL QUALITATIVA "RAM"
+library(psych)
+base$ram_mb[base$ram <= 384] = 256
+base$ram_mb[base$ram >= 384 & base$ram < 768]  = 512
+base$ram_mb[base$ram >= 768 & base$ram < 1536]  = 1024
+base$ram_mb[base$ram >= 1536 & base$ram < 3036]  = 2048
+base$ram_mb[base$ram >= 3036]  = 4096
+freq.tabela = table(base$ram_mb, useNA = "ifany")
+freq.tabela
+
+write.csv2(base, "base.csv", row.names = FALSE)
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

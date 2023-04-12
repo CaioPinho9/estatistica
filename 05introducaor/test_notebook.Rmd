@@ -1,0 +1,169 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+
+```{r}
+# CARREGAR O PACOTE
+library(data.table)
+# LEITURA DA BASE
+base =
+  fread(
+    input = paste0("dados_salarios.csv"),
+    header = T,
+    na.strings = "NA",
+    data.table = FALSE,
+    dec = ","
+  )
+
+# FORMATACAO
+library(dplyr)
+base$trab_remoto = recode(base$trab_remoto,
+                          `0` = "1:Não",
+                          `50` = "2:Parcial",
+                          `100` = "3:Total")
+
+base$experiencia = recode(
+  base$experiencia,
+  `EN` = "1:EN",
+  `MI` = "2:MI",
+  `SE` = "3:SE",
+  `EX` = "4:EX"
+)
+
+write.csv2(base, "base.csv", row.names = FALSE)
+
+```
+
+```{r}
+# CARREGAR TABELA FORMATADA E SALVA
+library(data.table)
+base =
+  fread(
+    input = paste0("base.csv"),
+    header = T,
+    na.strings = "NA",
+    data.table = FALSE,
+    dec = ","
+  )
+```
+
+```{r}
+# UMA VARIAVEL QUALITATIVA: TABELA DE FREQUENCIA
+freq.tabela = table(base$experiencia, useNA = "ifany")
+freq.tabela
+porc.tabela = round(prop.table(freq.tabela) * 100, 1)
+porc.tabela
+freq.tabela = data.frame(freq.tabela, porc.tabela)
+freq.tabela = freq.tabela[,-3]
+colnames(freq.tabela) = c("Experiencia", "Frequencia", "Porcentagem")
+```
+```{r}
+# GRAFICO DE BARRAS "EXPERIENCIA"
+# GRAFICO DE SETORES CIRCULARES "EXPERIENCIA"
+png(file = "barras.png")
+barplot(
+  height = freq.tabela$Frequencia,
+  names = freq.tabela$Experiencia,
+  col = rgb(0.3, 0.6, 0.5, 0.5),
+  xlab = "Experiência",
+  ylab = "Frequência",
+  main = ""
+)
+dev.off()
+
+png(file = "setores.png")
+pie(freq.tabela$Frequencia, freq.tabela$Experiencia,
+    main = "Tempo de Experiência")
+dev.off()
+```
+
+
+```{r}
+# DUAS VARIAVEIS QUALITATIVAS: TABELA CRUZADA OU GRAFICO DE BARRAS "EXPERIENCIA VS TRAB_REMOTO"
+freq.tabela =
+  table(base$experiencia, base$trab_remoto, useNA = "ifany")
+freq.tabela
+porc.tabelaL = round(prop.table(freq.tabela, 1) * 100, 1)
+porc.tabelaL
+tabela = data.frame(table(base$experiencia, base$trab_remoto))
+colnames(tabela) = c("Experiencia", "Trab_Remoto", "Freq")
+```
+
+```{r}
+# GRAFICOS FREQUENCIA E PORCENTAGEM
+library(ggplot2)
+ggplot(tabela, aes(fill = Trab_Remoto, y = Freq, x = Experiencia)) +
+  geom_bar(position = "dodge", stat = "identity")
+
+ggplot(tabela, aes(fill = Trab_Remoto, y = Freq, x = Experiencia)) +
+  geom_bar(position = "fill", stat = "identity") +
+  ylab("Porcentagem")
+```
+```{r}
+# UMA VARIAVEL QUANTITATIVA: HISTOGRAMA "SALARIO_USD"
+hist(base$salario_USD)
+hist(base$salario_USD,
+     breaks = 6)
+hist(
+  base$salario_USD,
+  main = "Distribuição Salarial",
+  xlab = "Salários",
+  col = "darkmagenta",
+  freq = FALSE
+)
+```
+```{r}
+# UMA VARIAVEL QUALITATIVA E UMA VARIAVEL QUANTITATIVA:
+# TABELA COM MEDIAS "EXPERIENCIA VS SALARIO_USD"
+tabela.medias =
+  aggregate(base$salario_USD,
+            by = list(base$experiencia),
+            FUN = "mean")
+colnames(tabela.medias) = c("Experiencia", "Sal_Medio")
+
+library(ggplot2)
+ggplot(tabela.medias, aes(x = Experiencia, y = Sal_Medio)) +
+  geom_bar(stat = "identity")
+```
+```{r}
+# DUAS VARIAVEIS QUANTITATIVAS: GRAFICO DE DISPERSAO "BASE NOVA"
+ggplot(data = iris, aes(Petal.Length, Petal.Width)) +
+  geom_point()
+png(file = "dispersao.png")
+ggplot(data = iris, aes(Petal.Length, Petal.Width, color = Species)) +
+  geom_point()
+dev.off()
+```
+```{r}
+# DUAS VARIAVEIS QUANTITATIVAS, SENDO UMA DELAS O TEMPO: GRAFICO DE LINHAS "ANO VS SALARIO_USD"
+salario_ano =
+  aggregate(base$salario_USD, by = list(base$ano), FUN = "mean")
+colnames(salario_ano) = c("ano", "salario")
+ggplot(data = salario_ano, aes(x = ano, y = salario)) +
+  geom_line(color = "blue", lwd = 1.8) +
+  geom_point(color = "red", lwd = 6)
+```
+```{r}
+# TRANSFORMACAO DE UMA VARIAVEL QUANTITATIVA PARA VARIAVEL QUALITATIVA "SALARIO_USD"
+library(psych)
+base$Cat_Salario[base$salario_USD <100000]  = "G1"
+base$Cat_Salario[base$salario_USD >=100000 & base$salario_USD <200000]  = "G2"
+base$Cat_Salario[base$salario_USD >=200000 & base$salario_USD <300000]  = "G3"
+base$Cat_Salario[base$salario_USD >=300000 & base$salario_USD <400000]  = "G4"
+base$Cat_Salario[base$salario_USD >=400000]  = "G5"
+freq.tabela = table(base$Cat_Salario, useNA = "ifany") 
+freq.tabela
+
+write.csv2(base, "base.csv", row.names = FALSE)
+```
+
